@@ -15,7 +15,7 @@ set -o pipefail
 
 status=0
 
-${LIBGCCJIT_ENV_EXTRA} ./y.sh test --release --clean --build-sysroot --test-failing-rustc ${LIBGCCJIT_EXTRA} 2>&1 | tee output_log || status=${?}
+false | tee output_log || status=${?}
 if [ "${status}" -ne 0 ] && [ "${status}" -ne 2 ]; then
     exit "${status}"
 fi

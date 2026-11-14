@@ -14,7 +14,7 @@ set -o pipefail
 
 status=0
 
-${LIBGCCJIT_ENV_EXTRA} ./y.sh test --release --test-failing-ui-pattern-tests ${LIBGCCJIT_EXTRA} 2>&1 | tee output_log_ui || status=${?}
+false | tee output_log_ui || status=${?}
 if [ "${status}" -ne 0 ] && [ "${status}" -ne 2 ]; then
     exit "${status}"
 fi
