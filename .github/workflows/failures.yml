@@ -3,8 +3,6 @@ name: Failures
 
 on:
   push:
-    branches:
-      - master
   pull_request:
 
 permissions:
@@ -36,118 +34,116 @@ jobs:
             env_extra: "TEST_FLAGS='-Cpanic=abort -Zpanic-abort-tests' GCC_EXEC_PREFIX=/usr/lib/gcc/"
 
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-    # `rustup show` installs from rust-toolchain.toml
-    - name: Setup rust toolchain
-      run: rustup show
+      # `rustup show` installs from rust-toolchain.toml
+      - name: Setup rust toolchain
+        run: rustup show
 
-    - name: Setup rust cache
-      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Setup rust cache
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
-    - name: Add apt mirrors
-      uses: $/.github/actions/apt-mirrors
+      - name: Add apt mirrors
+        uses: $/.github/actions/apt-mirrors
 
-    - name: Install packages
-      timeout-minutes: 20
-      run: |
-        sudo apt-get update
-        sudo apt-get install ninja-build ripgrep
+      - name: Install packages
+        timeout-minutes: 20
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build ripgrep
 
-    - name: Install libgccjit12
-      if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
-      timeout-minutes: 20
-      run: sudo apt-get install libgccjit-12-dev
+      - name: Install libgccjit12
+        if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
+        timeout-minutes: 20
+        run: sudo apt-get install libgccjit-12-dev
 
-    - name: Setup path to libgccjit
-      if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
-      run: |
+      - name: Setup path to libgccjit
+        if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
+        run: |
           echo 'gcc-path = "/usr/lib/gcc/x86_64-linux-gnu/12"' > config.toml
 
-    - name: Download artifact
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      run: curl -LO https://github.com/rust-lang/gcc/releases/latest/download/gcc-15.deb
+      - name: Download artifact
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        run: curl -LO https://github.com/rust-lang/gcc/releases/latest/download/gcc-15.deb
 
-    - name: Setup path to libgccjit
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      run: |
+      - name: Setup path to libgccjit
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        run: |
           sudo dpkg --force-overwrite -i gcc-15.deb
           echo 'gcc-path = "/usr/lib"' > config.toml
-          
-          
 
-    - name: Set env
-      run: |
-        echo "workspace="$GITHUB_WORKSPACE >> $GITHUB_ENV
+      - name: Set env
+        run: |
+          echo "workspace="$GITHUB_WORKSPACE >> $GITHUB_ENV
 
-    #- name: Cache rust repository
+      #- name: Cache rust repository
       #uses: actions/cache@v3
       #id: cache-rust-repository
       #with:
-        #path: rust
-        #key: ${{ runner.os }}-packages-${{ hashFiles('rust/.git/HEAD') }}
+      #path: rust
+      #key: ${{ runner.os }}-packages-${{ hashFiles('rust/.git/HEAD') }}
 
-    - name: Git config
-      run: |
-        git config --global user.email "user@example.com"
-        git config --global user.name "User"
+      - name: Git config
+        run: |
+          git config --global user.email "user@example.com"
+          git config --global user.name "User"
 
-    - name: Prepare dependencies
-      if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
-      run: ./y.sh prepare --libgccjit12-patches
+      - name: Prepare dependencies
+        if: matrix.libgccjit_version.gcc == 'libgccjit12.so'
+        run: ./y.sh prepare --libgccjit12-patches
 
-    - name: Prepare dependencies
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      run: ./y.sh prepare
+      - name: Prepare dependencies
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        run: ./y.sh prepare
 
-    - name: Check out rust-lang/rust
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      uses: $/.github/actions/checkout-rust
+      - name: Check out rust-lang/rust
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        uses: $/.github/actions/checkout-rust
 
-    - name: Run tests
-      # FIXME: re-enable those tests for libgccjit 12.
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      id: tests
-      # Without `set -o pipefail`, `tee` masks the exit status of `y.sh test`.
-      # This suite runs the tests known to fail, so only a build system error must fail the job.
-      run: |
-        bash <<-EOF
-        set -o pipefail
-        status=0
-        false 2>&1 | tee output_log || status=$?
-        if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
-          exit "$status"
-        fi
-        rg --text "test result" output_log >> $GITHUB_STEP_SUMMARY
-        EOF
-      env:
-        LIBGCCJIT_EXTRA: ${{ matrix.libgccjit_version.extra }}
-        LIBGCCJIT_ENV_EXTRA: ${{ matrix.libgccjit_version.env_extra }}
+      - name: Run tests
+        # FIXME: re-enable those tests for libgccjit 12.
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        id: tests
+        # Without `set -o pipefail`, `tee` masks the exit status of `y.sh test`.
+        # This suite runs the tests known to fail, so only a build system error must fail the job.
+        run: |
+          bash <<-EOF
+          set -o pipefail
+          status=0
+          false 2>&1 | tee output_log || status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            exit "$status"
+          fi
+          rg --text "test result" output_log >> $GITHUB_STEP_SUMMARY
+          EOF
+        env:
+          LIBGCCJIT_EXTRA: ${{ matrix.libgccjit_version.extra }}
+          LIBGCCJIT_ENV_EXTRA: ${{ matrix.libgccjit_version.env_extra }}
 
-    - name: Run failing ui pattern tests for ICE
-      # FIXME: re-enable those tests for libgccjit 12.
-      if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
-      id: ui-tests
-      # Without `set -o pipefail`, `tee` masks the exit status of `y.sh test`.
-      # This suite runs tests that fail, so only a build system error must fail the job here.
-      run: |
-        bash <<-EOF
-        set -o pipefail
-        status=0
-        ${LIBGCCJIT_ENV_EXTRA} ./y.sh test --release --test-failing-ui-pattern-tests ${LIBGCCJIT_EXTRA} 2>&1 | tee output_log_ui || status=$?
-        if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
-          exit "$status"
-        fi
-        if grep -q "the compiler unexpectedly panicked" output_log_ui; then
-          echo "Error: 'the compiler unexpectedly panicked' found in output logs. CI Error!!"
-          exit 1
-        fi
-        EOF
-      env:
-        LIBGCCJIT_EXTRA: ${{ matrix.libgccjit_version.extra }}
-        LIBGCCJIT_ENV_EXTRA: ${{ matrix.libgccjit_version.env_extra }}
+      - name: Run failing ui pattern tests for ICE
+        # FIXME: re-enable those tests for libgccjit 12.
+        if: matrix.libgccjit_version.gcc != 'libgccjit12.so'
+        id: ui-tests
+        # Without `set -o pipefail`, `tee` masks the exit status of `y.sh test`.
+        # This suite runs tests that fail, so only a build system error must fail the job here.
+        run: |
+          bash <<-EOF
+          set -o pipefail
+          status=0
+          ${LIBGCCJIT_ENV_EXTRA} ./y.sh test --release --test-failing-ui-pattern-tests ${LIBGCCJIT_EXTRA} 2>&1 | tee output_log_ui || status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            exit "$status"
+          fi
+          if grep -q "the compiler unexpectedly panicked" output_log_ui; then
+            echo "Error: 'the compiler unexpectedly panicked' found in output logs. CI Error!!"
+            exit 1
+          fi
+          EOF
+        env:
+          LIBGCCJIT_EXTRA: ${{ matrix.libgccjit_version.extra }}
+          LIBGCCJIT_ENV_EXTRA: ${{ matrix.libgccjit_version.env_extra }}
 
   # Summary job for the merge queue.
   # ALL THE PREVIOUS JOBS NEED TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
