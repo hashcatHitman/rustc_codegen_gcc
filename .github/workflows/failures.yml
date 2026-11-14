@@ -3,8 +3,6 @@ name: Failures
 
 on:
   push:
-    branches:
-      - master
   pull_request:
 
 permissions:
