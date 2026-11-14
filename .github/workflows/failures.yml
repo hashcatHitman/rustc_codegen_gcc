@@ -112,9 +112,9 @@ jobs:
           bash <<-EOF
           set -o pipefail
           status=0
-          false 2>&1 | tee output_log || status=$?
-          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
-            exit "$status"
+          false 2>&1 | tee output_log || status=\$?
+          if [ "\$status" -ne 0 ] && [ "\$status" -ne 2 ]; then
+            exit "\$status"
           fi
           rg --text "test result" output_log >> $GITHUB_STEP_SUMMARY
           EOF
@@ -132,9 +132,9 @@ jobs:
           bash <<-EOF
           set -o pipefail
           status=0
-          ${LIBGCCJIT_ENV_EXTRA} ./y.sh test --release --test-failing-ui-pattern-tests ${LIBGCCJIT_EXTRA} 2>&1 | tee output_log_ui || status=$?
-          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
-            exit "$status"
+          false 2>&1 | tee output_log_ui || status=\$?
+          if [ "\$status" -ne 0 ] && [ "\$status" -ne 2 ]; then
+            exit "\$status"
           fi
           if grep -q "the compiler unexpectedly panicked" output_log_ui; then
             echo "Error: 'the compiler unexpectedly panicked' found in output logs. CI Error!!"
